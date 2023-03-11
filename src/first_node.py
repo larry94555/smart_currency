@@ -3,8 +3,8 @@
 import argparse
 import asyncio
 import logging
+from discovery.message import Message
 from discovery.node import Node
-
 
 # Actions
 #--------
@@ -48,12 +48,17 @@ def main():
     
     s = "" if args.nodecount == 1 else "s"
     print(f"Initiating {nc} node{s}...")
-    firstNode = Node(host=ho, port=bp)
+    firstNode = Node(id=0, host=ho, port=bp)
     firstNode.join()
     if nc > 1:
         for i in range(nc-1):
-            node = Node(host=ho, port=bp)
+            node = Node(id=i+1, host=ho, port=bp)
             node.join(firstNode)
+    message = Message("Test")
+    result=firstNode.broadcast(message)
+    count = firstNode.count(message) 
+    total = firstNode.count()
+    print(f"Sent message:{message.getSubject()} to {count} nodes out of total: {total}")
     loop.run_forever()
 
 if __name__ == "__main__":
