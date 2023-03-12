@@ -48,7 +48,7 @@ def main():
     
     s = "" if args.nodecount == 1 else "s"
     print(f"Initiating {nc} node{s}...")
-    firstNode = Node(id=0, host=ho, port=bp)
+    firstNode = Node(id=0, host=ho, port=bp, path=p)
     firstNode.join()
     if nc > 1:
         for i in range(nc-1):
