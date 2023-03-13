@@ -35,12 +35,13 @@ def parse_arguments():
     parser.add_argument("-pa", "--path", help="specify the path for directory", type=str, default="test")
     return parser.parse_args()
     
-def main():
+async def main(loop):
     """
     bootstrap nc nodes which is used to test out the library.
     """
     args = parse_arguments()
     loop = asyncio.new_event_loop()
+    #loop = asyncio.get_event_loop()
     bp = args.baseport
     ho = args.host
     nc = args.nodecount
@@ -49,18 +50,21 @@ def main():
     s = "" if args.nodecount == 1 else "s"
     print(f"Initiating {nc} node{s}...")
     firstNode = Node(id=0, host=ho, port=bp, path=p)
-    firstNode.join()
+    first = await firstNode.join()
+    nodes = [firstNode]
     if nc > 1:
         for i in range(nc-1):
-            node = Node(id=i+1, host=ho, port=bp)
-            node.join(firstNode)
+            node = Node(id=i+1, host=ho, port=bp+i+0)
+            await node.join(nodes)
+            nodes.append(node)
     message = Message("Test")
     result=firstNode.broadcast(message)
     count = firstNode.count(message) 
     total = firstNode.count()
     print(f"Sent message:{message.getSubject()} to {count} nodes out of total: {total}")
-    loop.run_forever()
 
 if __name__ == "__main__":
-    main()
+    loop = asyncio.new_event_loop()
+    loop.run_until_complete(main(loop))
+    loop.run_forever()
 
