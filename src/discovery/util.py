@@ -4,6 +4,7 @@ from typing import Final
 from cryptography.hazmat.primitives import hashes
 import os
 from cryptography.hazmat.primitives import serialization
+import socket
 
 def create_keys(path):
     privateKey, publicKey = generate_private_and_public_keys()
@@ -19,12 +20,9 @@ def create_path_if_needed(path):
         os.makedirs(path)
     return path
 
-def findNextPort(port=1024):
-    print(f"util::findNextPort")
-    return port
-
 CURVE: Final = ec.SECP256K1()
 SIGNATURE_ALGORITHM: Final = ec.ECDSA(hashes.SHA256())
+MAX_PORT: Final = 65535
 
 def generate_private_and_public_keys():
     curve = ec.SECP256K1()
