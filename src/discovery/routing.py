@@ -1,5 +1,8 @@
 import asyncio
+import heapq
 from discovery.kbucket import KBucket
+import operator
+from discovery.tabletraverser import TableTraverser
 
 class RoutingTable:
     def __init__(self, protocol, ksize, node):
@@ -24,6 +27,18 @@ class RoutingTable:
         else:
             print(f"RoutingTable::add_contact: Calling ping...")
             asyncio.ensure_future(self.protocol.call_ping(bucket.head()))
+
+    def find_neighbors(self, node, k=None, exclude=None):
+        k = k or self.ksize
+        nodes = []
+        for neighbor in TableTraverser(self, node):
+            notexcluded = exclude is None or not neighbor.same_home_as(exclude)
+            if neighbor.id != node.id and notexcluded:
+                heapq.heappush(nodes, (node.distance_to(neighbor), neighbor))
+            if len(nodes) == k:
+                break
+
+        return list(map(operator.itemgetter(1), heapq.nsmallest(k, nodes)))
 
     def flush(self):
         self.buckets = [KBucket(0, 2 ** 260, self.ksize)]

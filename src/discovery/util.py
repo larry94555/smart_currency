@@ -1,3 +1,4 @@
+import asyncio
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import ec
 from typing import Final
@@ -34,6 +35,11 @@ def create_path_if_needed(path):
     if not os.path.exists(path):
         os.makedirs(path)
     return path
+
+async def gather_dict(dic):
+    cors = list(dic.values())
+    results = await asyncio.gather(*cors)
+    return dict(zip(dic.keys(), results))
 
 CURVE: Final = ec.SECP256K1()
 SIGNATURE_ALGORITHM: Final = ec.ECDSA(hashes.SHA256())
@@ -85,6 +91,7 @@ def get_public_key_from_pem_file(publicKeyFile):
     return result
 
 def read_bytes_from_file(fileWithPath):
+    print(f"util:read_bytes_fromfile: {fileWithPath}")
     with open(f"{fileWithPath}", "rb") as byteFile:
         result = byteFile.read()
         byteFile.close()
@@ -99,5 +106,9 @@ def shared_prefix(args):
     return args[0][:i]
 
 def write_bytes_to_file(bytesToWrite, fileWithPath):
+    print(f"util::write_bytes_to_file: {fileWithPath}")
     with open(f"{fileWithPath}", "wb") as byteFile:
-        byteFile.write(bytesToWrite)
+        results=byteFile.write(bytesToWrite)
+        byteFile.close()
+    return results 
+    
