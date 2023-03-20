@@ -2,6 +2,7 @@ import asyncio
 from discovery.storage import ForgetfulStorage
 from discovery.node import Node
 from discovery.protocol import Protocol
+from discovery.crawling import NodeSpiderCrawl
 import discovery.util as util
 
 class Server:
@@ -14,7 +15,8 @@ class Server:
     """
 
     def __init__(self, id=0, host="127.0.0.1", port=1024, path="./test", storage=None, ksize=5, alpha=3, nextAvailable=True):
-        print(f"Server::init: port: {port}")
+        print(f"Server::init: id: {id}, port: {port}")
+        self.id = id
         self.host = host
         self.ksize = ksize
         self.alpha = alpha
@@ -42,16 +44,19 @@ class Server:
         sender = (self.host, self.port)
         return Node(self._publicKey, sender)
 
-    async def bootstrap_server(self, server):
+    async def bootstrap_node(self, server):
         result = await self.protocol_class.ping(self.get_local_addr(server), self._publicKey)
         print(f"Server::bootstrap_server: received result: {result[0]} with id: {result[1]}")
-        return Server(result[1], server.host, server.port) if result[0] else None
+        return Node(result[1], (server.host, server.port)) if result[0] else None
 
     async def bootstrap(self, serverlist):
         print(f"Server::bootstrap")
-        cos = list(map(self.bootstrap_server, serverlist))
+        cos = list(map(self.bootstrap_node, serverlist))
         gathered = await asyncio.gather(*cos)
-        servers = [server for server in gathered  if server is not None]
+        nodes = [node for node in gathered  if node is not None]
+        spider = NodeSpiderCrawl(self.protocol_class, self.create_node(), nodes,
+                                 self.ksize, self.alpha)
+        return await spider.find()
 
     async def listen_to_next_port(self):
         loop = asyncio.get_event_loop()

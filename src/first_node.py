@@ -59,6 +59,7 @@ async def main(loop):
             server = Server(id=i+1, host=ho, port=port)
             port = server.port + 1
             await server.join(servers)
+            servers.append(server)
     message = Message("Test")
     result=firstServer.broadcast(message)
     count = firstServer.count(message) 
@@ -68,5 +69,5 @@ async def main(loop):
 if __name__ == "__main__":
     loop = asyncio.new_event_loop()
     loop.run_until_complete(main(loop))
-    loop.run_forever()
+    #loop.run_forever()
 

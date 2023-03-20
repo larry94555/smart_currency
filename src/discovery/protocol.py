@@ -20,7 +20,7 @@ class Protocol(RPCProtocol):
        print(f"Protocol::rpc_find_neighbor")
        source = Node(id, sender)
        self.welcome_if_new(source)
-       node = Node(key)
+       node = Node(key, sender=(None, None))
        nodes = self.router.find_neighbors(node, exclude=source)
        return list(map(tuple, nodes))
 
@@ -32,6 +32,12 @@ class Protocol(RPCProtocol):
        if value is None:
            return self.rpc_find_node(sender, nodeid, key)
        return { 'value': value}
+
+   async def call_find_node(self, node_to_ask, node_to_find):
+       address = node_to_ask.sender
+       result = await self.find_node(address, self.node.id, 
+                                     node_to_find.id)
+       return self.handle_call_response(result, node_to_ask)
 
    async def call_find_value(self, node_to_ask, node_to_find):
        print(f"Protocol::call_find_value")

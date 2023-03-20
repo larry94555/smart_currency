@@ -13,6 +13,9 @@ class KBucket:
         self.ksize = ksize
         self.maxReplacementNodes = self.ksize * replacementNodeFactor
 
+    def get_nodes(self):
+        return list(self.nodes.values())
+
     def head(self):
         return list(self.nodes.values())[0]
 
@@ -70,7 +73,7 @@ class KBucket:
 
     def remove_node(self, node):
         if node.id in self.replacementNodes:
-            del sel.replacementNodes[node.id]
+            del self.replacementNodes[node.id]
         
         if node.id in self.nodes:
             del self.nodes[node.id]
