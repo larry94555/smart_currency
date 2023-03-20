@@ -19,7 +19,6 @@ class ForgetfulStorage:
         return list(map(operator.itemgetter(0, 2), matches))
 
     def __iter__(self):
-        print(f"ForgetfulStorage::__iter__")
         self.cull()
         ikeys = self.data.keys()
         ivalues = map(operator.itemgetter(1), self.data.values())

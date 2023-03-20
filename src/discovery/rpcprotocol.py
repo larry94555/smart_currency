@@ -13,16 +13,17 @@ class RPCProtocol(asyncio.DatagramProtocol):
         self.transport = None
 
     def connection_made(self, transport):
-        print(f"connection_made")
+        print(f"RPCProtoco::connection_made: {transport}")
         self.transport = transport
 
     def datagram_received(self, data, addr):
-        print(f"datagram_received: addr: {addr}")
+        print(f"RPCProtoco::datagram_received: addr: {addr}")
         asyncio.ensure_future(self._solve_datagram(data, addr))
 
     async def _solve_datagram(self, datagram, address):
+        #print(f"RPCProtocol::_solve_datagram")
         if len(datagram) < 22:
-             print(f"received datagram too small from {address} ignoring")
+             print(f"RPCProtocol::_solve_datagram: received datagram too small from {address} ignoring")
              return
 
         msg_id = datagram[1:21]
@@ -32,12 +33,14 @@ class RPCProtocol(asyncio.DatagramProtocol):
         elif datagram[:1] == b'\x01':
             self._accept_response(msg_id, data, address)
         else:
-            print(f"Received unknown message from {address}, ignoring")
+            print(f"RPCProtocol::_solve_datagram: received unknown message from {address}, ignoring")
 
     async def _accept_request(self, msg_id, data, address):
+        #print(f"RPCProtocol::_accept_request")
         if not isinstance(data, list) or len(data) != 2:
             raise MalformedMessage(f"Could not read packet: {data}") 
         funcname, args = data
+        print(f"RPCProtocol::_accept_request: calling: rpc_{funcname}")
         func = getattr(self, "rpc_%s" % funcname, None)
         if func is None or not callable(func):
             msgargs = (self.__class__, __name__, funcname)
@@ -48,24 +51,26 @@ class RPCProtocol(asyncio.DatagramProtocol):
         if not asyncio.iscoroutinefunction(func):
             func = asyncio.coroutine(func)
         response = await func(address, *args)
-        print(f"sending response {response} for msg id {b64encode(msg_id)} to {address}")
+        print(f"RPCProtocol::_accept_request: sending response {response} for msg id {b64encode(msg_id)} to {address}")
         txdata = b'\x01' + msg_id + umsgpack.packb(response)
         self.transport.sendto(txdata, address)
 
     def _accept_response(self, msg_id, data, address):
+        #print(f"RPCProtocol::_accept_response")
         msgargs = (b64encode(msg_id), address)
         if msg_id not in self._outstanding:
             print("received unknown message %s "
                   "from %s; ignoring", *msgargs)
             return
-        print("received response %s for message "
-              "id %s from %s", data, *msgargs)
+        print("RPCProtocol::_accept_response: received response %s for message "
+              "id %s from %s" % (data, *msgargs))
         future, timeout = self._outstanding[msg_id]
         timeout.cancel()
         future.set_result((True, data))
         del self._outstanding[msg_id]
 
     def _timeout(self, msg_id):
+        print(f"RPCProtoco::_timeout")
         args = (b64encode(msg_id), self._wait_timeout)
         self._outstanding[msg_id][0].set_result((False, None))
         del self._outstanding[msg_id]
